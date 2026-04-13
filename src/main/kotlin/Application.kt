@@ -9,8 +9,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 fun main(args: Array<String>) {
     embeddedServer(
         Netty,
-        port = 31337,
-        host = "0.0.0.0",
+        port = 8080,
         module = Application::module
     ).start(wait = true)
 }
