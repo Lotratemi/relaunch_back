@@ -1,13 +1,11 @@
 package com.codingfactory
 
-import com.codingfactory.models.Streak
-import com.codingfactory.models.User
+import com.codingfactory.models.RelaunchModels.*
 import io.github.jan.supabase.postgrest.from
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.jsonPrimitive
@@ -15,6 +13,7 @@ import kotlinx.serialization.json.long
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import kotlin.collections.all
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
