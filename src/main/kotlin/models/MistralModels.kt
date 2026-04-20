@@ -38,7 +38,7 @@ class MistralModels {
     data class ConversationUsage(
         val prompt_tokens: Int,
         val completion_tokens: Int,
-        val total_tokens: Int
+        val total_tokens: Int,
     )
 
     @Serializable

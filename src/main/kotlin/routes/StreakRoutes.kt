@@ -1,55 +1,114 @@
 package com.codingfactory.routes
 
-import com.codingfactory.models.Streak
+import com.codingfactory.models.RelaunchModels
 import com.codingfactory.supabase
 import io.github.jan.supabase.postgrest.from
-import io.ktor.http.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.delete
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.put
+import io.ktor.server.routing.route
 
 fun Route.streakRoutes() {
     route("/streaks") {
-        get {
-            val userId = call.request.queryParameters["user_id"]?.toLongOrNull()
-            val streaks = supabase.from("streak").select {
-                if (userId != null) filter { eq("user_id", userId) }
-            }.decodeList<Streak>()
+
+        // Gets all user's streak
+        get("/{userId}") {
+            val userId: Long = call.parameters["userId"]?.toLong()
+                ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid user id")
+
+            val streaks: List<RelaunchModels.Streak> =
+                supabase.from("streak")
+                    .select {
+                        filter { RelaunchModels.Streak::userId eq userId }
+                    }.decodeList<RelaunchModels.Streak>()
+
             call.respond(streaks)
         }
 
-        get("/{id}") {
-            val id = call.parameters["id"]?.toLongOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid id")
-            val streak = supabase.from("streak").select {
-                filter { eq("id", id) }
-            }.decodeSingleOrNull<Streak>()
-                ?: return@get call.respond(HttpStatusCode.NotFound)
+        // Gets a specific user's streak
+        get("/{userId}/{streakId}") {
+            val userId: Long = call.parameters["userId"]?.toLong()
+                ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid user id")
+
+            val streakId: Long = call.parameters["streakId"]?.toLong()
+                ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid streak id")
+
+            val streak: RelaunchModels.Streak? = supabase.from("streak")
+                .select {
+                    filter {
+                        RelaunchModels.Streak::id eq streakId
+                        RelaunchModels.Streak::userId eq userId
+                    }
+                }.decodeSingleOrNull()
+
+            if (streak == null) return@get call.respond(HttpStatusCode.NotFound)
+
             call.respond(streak)
         }
 
+        // Creates a new streak
         post {
-            val body = call.receive<Streak>()
-            val created = supabase.from("streak").insert(body) { select() }.decodeSingle<Streak>()
-            call.respond(HttpStatusCode.Created, created)
+            val createdStreak: RelaunchModels.Streak? =
+                supabase.from("streak")
+                    .insert(call.receive<RelaunchModels.Streak>()) {
+                        select()
+                    }.decodeSingleOrNull()
+
+            if (createdStreak == null) {
+                return@post call.respond(HttpStatusCode.BadRequest, "Failed to create streak")
+            }
+
+            call.respond(HttpStatusCode.Created, createdStreak)
         }
 
-        put("/{id}") {
-            val id = call.parameters["id"]?.toLongOrNull()
-                ?: return@put call.respond(HttpStatusCode.BadRequest, "Invalid id")
-            val body = call.receive<Streak>()
-            val updated = supabase.from("streak").update(body) {
-                select()
-                filter { eq("id", id) }
-            }.decodeSingle<Streak>()
-            call.respond(updated)
+        // Updates a specific streak
+        put("/{userId}/{streakId}") {
+            val userId: Long = call.parameters["userId"]?.toLong()
+                ?: return@put call.respond(HttpStatusCode.BadRequest, "Invalid user id")
+
+            val streakId: Long = call.parameters["streakId"]?.toLong()
+                ?: return@put call.respond(HttpStatusCode.BadRequest, "Invalid streak id")
+
+            val updatedStreak: RelaunchModels.Streak? =
+                supabase.from("streak")
+                    .update(call.receive()) {
+                    select()
+                    filter {
+                        RelaunchModels.Streak::id eq streakId
+                        RelaunchModels.Streak::userId eq userId
+                    }
+            }.decodeSingleOrNull()
+
+            if (updatedStreak == null) {
+                return@put call.respond(HttpStatusCode.BadRequest, "Failed to update streak")
+            }
+
+            call.respond(updatedStreak)
         }
 
-        delete("/{id}") {
-            val id = call.parameters["id"]?.toLongOrNull()
-                ?: return@delete call.respond(HttpStatusCode.BadRequest, "Invalid id")
-            supabase.from("streak").delete { filter { eq("id", id) } }
+        // Deletes a specific streak
+        delete("/{userId}/{streakId}") {
+            val userId: Long = call.parameters["userId"]?.toLong()
+                ?: return@delete call.respond(HttpStatusCode.BadRequest, "Invalid user id")
+
+            val streakId: Long = call.parameters["streakId"]?.toLong()
+                ?: return@delete call.respond(HttpStatusCode.BadRequest, "Invalid streak id")
+
+            supabase.from("streak")
+                .delete {
+                    filter {
+                        RelaunchModels.Streak::id eq streakId
+                        RelaunchModels.Streak::userId eq userId
+                    }
+                }
+
             call.respond(HttpStatusCode.NoContent)
         }
+
     }
 }
