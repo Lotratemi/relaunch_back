@@ -1,11 +1,18 @@
 package com.codingfactory
 
-import com.codingfactory.models.Objective
-import com.codingfactory.models.User
+import com.codingfactory.models.RelaunchModels
+import com.codingfactory.models.RelaunchModels.Objective
+import com.codingfactory.models.RelaunchModels.User
 import io.github.jan.supabase.postgrest.from
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.ktor.client.call.body
+import io.ktor.client.request.delete
+import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
@@ -23,7 +30,13 @@ class ObjectiveRoutesTest {
     @Before
     fun setup() = runBlocking {
         testUser = supabase.from("user")
-            .insert(User(name = "obj_test_$suffix", mail = "obj_$suffix@test.com", age = 28)) { select() }
+            .insert(
+                RelaunchModels.User(
+                    name = "obj_test_$suffix",
+                    mail = "obj_$suffix@test.com",
+                    age = 28
+                )
+            ) { select() }
             .decodeSingle<User>()
     }
 

@@ -7,6 +7,7 @@ import kotlinx.serialization.json.Json
 
 val mistralApiKey: String = System.getenv("MISTRAL_API_KEY")
 val mistralApiUrl: String = System.getenv("MISTRAL_API_URL")
+val mistralAiModel: String = System.getenv("MISTRAL_AI_MODEL")
 
 val mistralClient: HttpClient = HttpClient {
     install(ContentNegotiation) {

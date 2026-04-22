@@ -1,6 +1,6 @@
 package com.codingfactory
 
-import com.codingfactory.models.User
+import com.codingfactory.models.RelaunchModels.*
 import io.github.jan.supabase.postgrest.from
 import io.ktor.client.call.*
 import io.ktor.client.request.*

@@ -1,51 +1,78 @@
 package com.codingfactory.routes
 
-import com.codingfactory.models.User
+import com.codingfactory.models.RelaunchModels
 import com.codingfactory.supabase
 import io.github.jan.supabase.postgrest.from
-import io.ktor.http.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.delete
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.put
+import io.ktor.server.routing.route
 
 fun Route.userRoutes() {
     route("/users") {
-        get {
-            val users = supabase.from("user").select().decodeList<User>()
-            call.respond(users)
-        }
 
-        get("/{id}") {
-            val id = call.parameters["id"]?.toLongOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid id")
-            val user = supabase.from("user").select {
-                filter { eq("id", id) }
-            }.decodeSingleOrNull<User>()
-                ?: return@get call.respond(HttpStatusCode.NotFound)
+        // Gets user's info by id
+        get("/{userId}") {
+            val userId: Long = call.parameters["user_id"]?.toLong()
+                ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid user id")
+
+            val user: RelaunchModels.User? =
+                supabase.from("user")
+                    .select {
+                        filter { RelaunchModels.User::id eq userId }
+                    }.decodeSingleOrNull()
+
+            if (user == null) return@get call.respond(HttpStatusCode.NotFound)
+
             call.respond(user)
         }
 
+        // Creates a user
         post {
-            val body = call.receive<User>()
-            val created = supabase.from("user").insert(body) { select() }.decodeSingle<User>()
-            call.respond(HttpStatusCode.Created, created)
+            val createdUser: RelaunchModels.User? =
+                supabase.from("user")
+                    .insert(call.receive<RelaunchModels.User>()) {
+                        select()
+                    }.decodeSingle<RelaunchModels.User>()
+
+            if (createdUser == null) {
+                return@post call.respond(HttpStatusCode.BadRequest, "Failed to create user")
+            }
+
+            call.respond(HttpStatusCode.Created, createdUser)
         }
 
-        put("/{id}") {
-            val id = call.parameters["id"]?.toLongOrNull()
-                ?: return@put call.respond(HttpStatusCode.BadRequest, "Invalid id")
-            val body = call.receive<User>()
-            val updated = supabase.from("user").update(body) {
-                select()
-                filter { eq("id", id) }
-            }.decodeSingle<User>()
-            call.respond(updated)
+        // Updates a user
+        put("/{userId}") {
+            val userId = call.parameters["userId"]?.toLong()
+                ?: return@put call.respond(HttpStatusCode.BadRequest, "Invalid user id")
+
+            val updatedUser: RelaunchModels.User? =
+                supabase.from("user")
+                    .update(call.receive()) {
+                        select()
+                        filter { RelaunchModels.User::id eq userId }
+                    }.decodeSingleOrNull()
+
+            if (updatedUser == null) {
+                return@put call.respond(HttpStatusCode.BadRequest, "Failed to update user")
+            }
+
+            call.respond(updatedUser)
         }
 
-        delete("/{id}") {
-            val id = call.parameters["id"]?.toLongOrNull()
-                ?: return@delete call.respond(HttpStatusCode.BadRequest, "Invalid id")
-            supabase.from("user").delete { filter { eq("id", id) } }
+        // Deletes a user
+        delete("/{userId}") {
+            val userId: Long = call.parameters["userId"]?.toLong()
+                ?: return@delete call.respond(HttpStatusCode.BadRequest, "Invalid user id")
+
+            supabase.from("user").delete { filter { RelaunchModels.User::id eq userId } }
+
             call.respond(HttpStatusCode.NoContent)
         }
     }
