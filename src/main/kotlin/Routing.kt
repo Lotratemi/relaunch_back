@@ -4,14 +4,23 @@ import com.codingfactory.routes.coachRoutes
 import com.codingfactory.routes.objectiveRoutes
 import com.codingfactory.routes.streakRoutes
 import com.codingfactory.routes.userRoutes
+import com.codingfactory.services.CoachService
+import com.codingfactory.services.ObjectiveService
+import com.codingfactory.services.StreakService
+import com.codingfactory.services.UserService
 import io.ktor.server.application.Application
 import io.ktor.server.routing.routing
 
-fun Application.configureRouting() {
+fun Application.configureRouting(
+    userService: UserService,
+    objectiveService: ObjectiveService,
+    streakService: StreakService,
+    coachService: CoachService
+) {
     routing {
-        userRoutes()
-        coachRoutes()
-        objectiveRoutes()
-        streakRoutes()
+        userRoutes(userService)
+        coachRoutes(coachService)
+        objectiveRoutes(objectiveService)
+        streakRoutes(streakService)
     }
 }
