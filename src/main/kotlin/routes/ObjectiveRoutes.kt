@@ -1,8 +1,7 @@
 package com.codingfactory.routes
 
 import com.codingfactory.models.RelaunchModels
-import com.codingfactory.supabase
-import io.github.jan.supabase.postgrest.from
+import com.codingfactory.services.ObjectiveService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -13,100 +12,55 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 
-fun Route.objectiveRoutes() {
+fun Route.objectiveRoutes(service: ObjectiveService) {
     route("/objectives") {
 
-        // Gets all user's objectives
         get("/{userId}") {
-            val userId: Long = call.parameters["userId"]?.toLong()
+            val userId = call.parameters["userId"]?.toLong()
                 ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid user id")
 
-            val objectives: List<RelaunchModels.Objective> =
-                supabase.from("objectives")
-                    .select {
-                        filter { RelaunchModels.Objective::userId eq userId }
-                    }.decodeList<RelaunchModels.Objective>()
-
-            call.respond(objectives)
+            call.respond(service.getAllForUser(userId))
         }
 
-        // Gets a specific user's objective
         get("/{userId}/{objectiveId}") {
-            val userId: Long = call.parameters["id"]?.toLong()
+            val userId = call.parameters["userId"]?.toLong()
                 ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid user id")
-
-            val objectiveId: Long = call.parameters["id"]?.toLong()
+            val objectiveId = call.parameters["objectiveId"]?.toLong()
                 ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid objective id")
 
-            val objective: RelaunchModels.Objective? =
-                supabase.from("objectives")
-                    .select {
-                        filter {
-                            RelaunchModels.Objective::id eq objectiveId
-                            RelaunchModels.Objective::userId eq userId
-                        }
-                    }.decodeSingleOrNull()
-
-            if (objective == null) return@get call.respond(HttpStatusCode.NotFound)
+            val objective = service.getByIdForUser(objectiveId, userId)
+                ?: return@get call.respond(HttpStatusCode.NotFound)
 
             call.respond(objective)
         }
 
-        // Creates a new objective
         post {
-            val createdObjective: RelaunchModels.Objective? =
-                supabase.from("objectives")
-                    .insert(call.receive<RelaunchModels.Objective>()) {
-                        select()
-                    }.decodeSingleOrNull()
+            val created = service.create(call.receive<RelaunchModels.Objective>())
+                ?: return@post call.respond(HttpStatusCode.BadRequest, "Failed to create objective")
 
-            if (createdObjective == null) {
-                return@post call.respond(HttpStatusCode.BadRequest, "Failed to create objective")
-            }
-
-            call.respond(HttpStatusCode.Created, createdObjective)
+            call.respond(HttpStatusCode.Created, created)
         }
 
-        // Updates a specific objective
         put("/{userId}/{objectiveId}") {
-            val userId: Long = call.parameters["id"]?.toLong()
+            val userId = call.parameters["userId"]?.toLong()
                 ?: return@put call.respond(HttpStatusCode.BadRequest, "Invalid user id")
-
-            val objectiveId: Long = call.parameters["id"]?.toLong()
+            val objectiveId = call.parameters["objectiveId"]?.toLong()
                 ?: return@put call.respond(HttpStatusCode.BadRequest, "Invalid objective id")
 
-            val updatedObjective: RelaunchModels.Objective? =
-                supabase.from("objectives")
-                    .update(call.receive()) {
-                        select(); filter {
-                            RelaunchModels.Objective::id eq objectiveId
-                            RelaunchModels.Objective::userId eq userId
-                        }
-                    }.decodeSingleOrNull()
+            val updated = service.update(objectiveId, userId, call.receive())
+                ?: return@put call.respond(HttpStatusCode.BadRequest, "Failed to update objective")
 
-            if (updatedObjective == null) {
-                return@put call.respond(HttpStatusCode.BadRequest, "Failed to update objective")
-            }
-
-            call.respond(updatedObjective)
+            call.respond(updated)
         }
 
-        // Deletes a specific objective
         delete("/{userId}/{objectiveId}") {
-            val userId: Long = call.parameters["id"]?.toLong()
+            val userId = call.parameters["userId"]?.toLong()
                 ?: return@delete call.respond(HttpStatusCode.BadRequest, "Invalid user id")
-
-            val objectiveId: Long = call.parameters["id"]?.toLong()
+            val objectiveId = call.parameters["objectiveId"]?.toLong()
                 ?: return@delete call.respond(HttpStatusCode.BadRequest, "Invalid objective id")
 
-            supabase.from("objectives")
-                .delete {
-                    filter { RelaunchModels.Objective::id.eq(objectiveId) }
-                    filter { RelaunchModels.Objective::userId.eq(userId) }
-                }
-
+            service.delete(objectiveId, userId)
             call.respond(HttpStatusCode.NoContent)
         }
-
     }
 }
