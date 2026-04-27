@@ -1,0 +1,17 @@
+CREATE TABLE IF NOT EXISTS "user" (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    name TEXT NOT NULL,
+    mail TEXT NOT NULL,
+    age SMALLINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS objectives (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES "user"(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    end_at TIMESTAMPTZ NOT NULL,
+    frequency BIGINT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT
+);

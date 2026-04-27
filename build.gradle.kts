@@ -13,13 +13,15 @@ application {
     mainClass = "io.ktor.server.netty.EngineMain"
 }
 
+fun loadLocalProps(): Map<String, String> {
+    val file = file("local.properties")
+    if (!file.exists()) return emptyMap()
+    val props = Properties().apply { load(file.inputStream()) }
+    return props.entries.associate { it.key.toString() to it.value.toString() }
+}
+
 tasks.named<JavaExec>("run") {
-    val localProps = file("local.properties")
-    if (localProps.exists()) {
-        val props = Properties()
-        props.load(localProps.inputStream())
-        environment(props.entries.associate { it.key.toString() to it.value.toString() })
-    }
+    environment(loadLocalProps())
 }
 
 kotlin {
@@ -39,15 +41,64 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.github.jan-tennert.supabase:realtime-kt")
     implementation(libs.ktor.client.content.negotiation)
+    implementation("org.postgresql:postgresql:42.7.4")
+
     testImplementation(libs.ktor.server.test.host)
-    testImplementation(libs.kotlin.test.junit)
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:${libs.versions.kotlin.get()}")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
 }
 
-tasks.named<Test>("test") {
-    val localProps = file("local.properties")
-    if (localProps.exists()) {
-        val props = Properties()
-        props.load(localProps.inputStream())
-        environment(props.entries.associate { it.key.toString() to it.value.toString() })
+val props = loadLocalProps()
+fun prop(key: String) = props[key] ?: error("Missing $key in local.properties")
+val testDbContainer = prop("TEST_DB_CONTAINER")
+val testDbPort = prop("TEST_DB_PORT")
+val testDbName = prop("TEST_DB_NAME")
+val testDbUser = prop("TEST_DB_USER")
+val testDbPassword = prop("TEST_DB_PASSWORD")
+
+val initSqlPath = file("src/test/resources/init.sql").absolutePath.replace('\\', '/')
+
+val startTestDb by tasks.registering(Exec::class) {
+    description = "Starts the Postgres container used by integration tests."
+    isIgnoreExitValue = true
+    commandLine(
+        "docker", "run", "-d", "--rm",
+        "--name", testDbContainer,
+        "-p", "$testDbPort:5432",
+        "-e", "POSTGRES_DB=$testDbName",
+        "-e", "POSTGRES_USER=$testDbUser",
+        "-e", "POSTGRES_PASSWORD=$testDbPassword",
+        "-v", "$initSqlPath:/docker-entrypoint-initdb.d/init.sql:ro",
+        "postgres:16-alpine"
+    )
+}
+
+val waitForTestDb by tasks.registering {
+    description = "Waits until the Postgres test container is ready."
+    dependsOn(startTestDb)
+    doLast {
+        val deadline = System.currentTimeMillis() + 30_000
+        while (System.currentTimeMillis() < deadline) {
+            val proc = ProcessBuilder("docker", "exec", testDbContainer, "pg_isready", "-U", testDbUser, "-d", testDbName)
+                .redirectErrorStream(true).start()
+            proc.inputStream.readAllBytes()
+            if (proc.waitFor() == 0) return@doLast
+            Thread.sleep(500)
+        }
+        throw GradleException("Test database not ready after 30s")
     }
+}
+
+val stopTestDb by tasks.registering(Exec::class) {
+    description = "Stops the Postgres test container."
+    isIgnoreExitValue = true
+    commandLine("docker", "rm", "-f", testDbContainer)
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+    dependsOn(waitForTestDb)
+    finalizedBy(stopTestDb)
+    environment(loadLocalProps())
+    environment("APP_MODE", "test")
 }
