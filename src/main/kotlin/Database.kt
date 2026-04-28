@@ -33,11 +33,25 @@ object Database {
     private val jdbcUser: String by lazy { env("TEST_DB_USER") }
     private val jdbcPassword: String by lazy { env("TEST_DB_PASSWORD") }
 
-    fun connection(): Connection = DriverManager.getConnection(jdbcUrl, jdbcUser, jdbcPassword)
+    fun connection(): Connection {
+        return try {
+            DriverManager.getConnection(jdbcUrl, jdbcUser, jdbcPassword)
+        } catch (e: Exception) {
+                throw RuntimeException("Erreur connexion DB Test : ${e.message}")
+        }
+    }
 
-    suspend fun <T> run(prod: suspend (SupabaseClient) -> T, test: (Connection) -> T): T = when (mode) {
-        DbMode.PROD -> prod(supabase)
-        DbMode.TEST -> connection().use(test)
+    suspend fun <T> run(prod: suspend (SupabaseClient) -> T, test: (Connection) -> T): T {
+        return try {
+            when (mode) {
+                DbMode.PROD -> prod(supabase)
+                DbMode.TEST -> connection().use(test)
+            }
+        } catch (e: Exception) {
+            println("Erreur DataBase (${mode}): ${e.message}")
+            throw e
+        }
+
     }
 
     inline fun <reified T> Connection.fetchAll(sql: String, vararg args: Any?): List<T> {
