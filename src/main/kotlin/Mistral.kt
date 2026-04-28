@@ -13,6 +13,9 @@ val mistralAiModel: String = env("MISTRAL_AI_MODEL")
 
 val mistralClient: HttpClient = HttpClient {
     install(ContentNegotiation) {
-        json(Json { ignoreUnknownKeys = true })
+        json(Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+        })
     }
 }
