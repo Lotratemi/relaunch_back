@@ -4,7 +4,6 @@ import com.codingfactory.services.CoachService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
-import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
@@ -28,7 +27,7 @@ fun Route.coachRoutes(service: CoachService) {
             val reply = service.chat(userId, conversationId, call.receiveText())
                 ?: return@post call.respond(HttpStatusCode.BadRequest, "Failed to find conversation")
 
-            call.respondText(reply)
+            call.respond(reply)
         }
     }
 }
