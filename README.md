@@ -47,7 +47,6 @@ Integration tests run against the real Supabase instance. Each test class create
 | `ConversationRoutesTest` | CRUD + filter by `user_id` |
 | `MessageRoutesTest` | Create/read/delete + filter by `conversation_id` |
 | `ObjectiveRoutesTest` | CRUD + filter by `user_id` |
-| `StreakRoutesTest` | CRUD + filter by `user_id`, bitmask data assertions |
 
 ```bash
 # Run all tests
@@ -58,7 +57,6 @@ Integration tests run against the real Supabase instance. Each test class create
 ./gradlew test --tests "com.codingfactory.ConversationRoutesTest"
 ./gradlew test --tests "com.codingfactory.MessageRoutesTest"
 ./gradlew test --tests "com.codingfactory.ObjectiveRoutesTest"
-./gradlew test --tests "com.codingfactory.StreakRoutesTest"
 ```
 
 Credentials are loaded from `local.properties` (gitignored). See `.env.example` for the required keys.
@@ -151,28 +149,6 @@ Base URL: `http://0.0.0.0:31337`
   "frequency": 7,
   "title": "Exercise daily",
   "description": "30 minutes of cardio"
-}
-```
-
----
-
-### Streaks
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/streaks` | List all streaks |
-| GET | `/streaks?user_id={id}` | List streaks for a user |
-| GET | `/streaks/{id}` | Get a streak by ID |
-| POST | `/streaks` | Create a streak |
-| PUT | `/streaks/{id}` | Update a streak |
-| DELETE | `/streaks/{id}` | Delete a streak |
-
-**Streak object:**
-```json
-{
-  "user_id": 1,
-  "data": [],
-  "started_at": "2026-01-01T00:00:00Z"
 }
 ```
 
