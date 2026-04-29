@@ -2,10 +2,12 @@ package com.codingfactory
 
 import com.codingfactory.repositories.ConversationRepository
 import com.codingfactory.repositories.ObjectiveRepository
+import com.codingfactory.repositories.ProfilingRepository
 import com.codingfactory.repositories.StreakRepository
 import com.codingfactory.repositories.UserRepository
 import com.codingfactory.services.CoachService
 import com.codingfactory.services.ObjectiveService
+import com.codingfactory.services.ProfilingService
 import com.codingfactory.services.StreakService
 import com.codingfactory.services.UserService
 import io.ktor.serialization.kotlinx.json.json
@@ -25,6 +27,9 @@ fun Application.module() {
     val coachService = CoachService(
         ConversationRepository(), mistralClient, mistralApiUrl, mistralApiKey, mistralAiModel
     )
+    val profilingService = ProfilingService(
+        ProfilingRepository(), mistralClient, mistralApiUrl, mistralApiKey, mistralAiModel
+    )
 
-    configureRouting(userService, objectiveService, streakService, coachService)
+    configureRouting(userService, objectiveService, streakService, coachService, profilingService)
 }
