@@ -2,7 +2,6 @@ package com.codingfactory.models
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonArray
 
 class RelaunchModels {
     @Serializable
@@ -42,13 +41,5 @@ class RelaunchModels {
         val frequency: Long,
         val title: String,
         val description: String? = null
-    )
-
-    @Serializable
-    data class Streak(
-        val id: Long? = null,
-        @SerialName("user_id") val userId: Long,
-        val data: JsonArray,
-        @SerialName("started_at") val startedAt: String? = null
     )
 }
