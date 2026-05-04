@@ -23,7 +23,6 @@ fun Application.module() {
 
     val userService = UserService(UserRepository())
     val objectiveService = ObjectiveService(ObjectiveRepository())
-    val streakService = StreakService(StreakRepository())
     val coachService = CoachService(
         ConversationRepository(), mistralClient, mistralApiUrl, mistralApiKey, mistralAiModel
     )
