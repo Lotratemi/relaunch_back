@@ -103,7 +103,181 @@ class MistralModels {
                 type = "json_schema"
             )
         )
+
+        // PROFILING
+        const val PROFILING_INSTRUCTIONS = """
+        Tu es un expert en psychologie du coaching.
+        Analyse les réponses de l'utilisateur aux 15 questions suivantes et retourne un profil structuré.
+        
+        QUESTIONS :
+        1. Face à un défi, quelle est votre première réaction ?
+           A) J'analyse les données disponibles
+           B) J'en discute avec mon entourage
+           C) Je visualise la solution idéale
+           D) Je passe directement à l'action
+    
+        2. Qu'est-ce qui vous motive le plus au quotidien ?
+           A) Atteindre des objectifs ambitieux
+           B) Créer des liens forts avec les autres
+           C) Approfondir ma compréhension d'un sujet
+           D) Innover et explorer de nouvelles idées
+    
+        3. Comment vous situez-vous par rapport à la planification ? (échelle 1 à 5)
+           1 = Je vis dans le présent / 5 = Je planifie tout à l'avance
+    
+        4. Dans un groupe, quel rôle prenez-vous naturellement ?
+           A) Leader / meneur
+           B) Médiateur / arbitre
+           C) Expert / conseiller
+           D) Exécutant / réalisateur
+    
+        5. Comment réagissez-vous face à l'échec ?
+           A) J'analyse ce qui s'est passé
+           B) Je rebondis et repars de l'avant
+           C) Je cherche du soutien autour de moi
+           D) J'accepte et passe naturellement à la suite
+    
+        6. Votre rapport aux règles et processus ? (échelle 1 à 5)
+           1 = Je préfère innover et les contourner / 5 = Je les respecte et les structure
+    
+        7. Que signifie le succès pour vous ?
+           A) Accomplir mes objectifs personnels
+           B) Avoir un impact positif sur les autres
+           C) Être reconnu pour mon expertise
+           D) Créer quelque chose d'unique et nouveau
+    
+        8. Comment prenez-vous vos décisions importantes ?
+           A) En suivant mon intuition
+           B) En analysant les faits et chiffres
+           C) En consultant mon entourage
+           D) En évaluant risques et opportunités
+    
+        9. À quel rythme préférez-vous progresser ?
+           A) Vite — j'ai besoin de voir des résultats rapides
+           B) Méthodiquement — je préfère bien faire les choses
+           C) Au fil des rencontres et des échanges
+           D) Librement, sans contrainte de calendrier
+    
+        10. À quel point êtes-vous à l'aise avec l'expression de vos émotions ? (échelle 1 à 5)
+            1 = Très difficile pour moi / 5 = Très naturel et fluide
+    
+        11. Face à un changement important, vous…
+            A) L'anticipez et vous préparez activement
+            B) L'accueillez avec curiosité
+            C) Avez besoin de temps pour vous adapter
+            D) Préférez la stabilité et cherchez à le limiter
+    
+        12. Votre entourage vous décrit le plus souvent comme…
+            A) Ambitieux(se) et déterminé(e)
+            B) Empathique et à l'écoute
+            C) Rigoureux(se) et fiable
+            D) Créatif(ve) et original(e)
+    
+        13. Comment rechargez-vous vos batteries ?
+            A) Seul(e), dans le calme et la solitude
+            B) Avec des proches et des activités sociales
+            C) En pratiquant une passion ou un hobby
+            D) En travaillant sur un projet stimulant
+    
+        14. Quelle affirmation vous représente le mieux dans votre travail ?
+            A) Je suis là pour décider et avancer
+            B) Je suis là pour comprendre et analyser
+            C) Je suis là pour relier et harmoniser
+            D) Je suis là pour créer et imaginer
+    
+        15. Quel aspect du coaching vous attire le plus ?
+            A) Définir une vision et une stratégie claire
+            B) Améliorer mes performances et ma productivité
+            C) Mieux me comprendre et gérer mes émotions
+            D) Améliorer mes relations et ma communication
+    
+        PROFILS POSSIBLES :
+        Le Visionnaire, L'Achiever, Le Connecteur, L'Analyste,
+        L'Explorateur, Le Leader, Le Créateur, L'Empathique
+    
+        DIMENSIONS À SCORER (0.0 à 1.0) :
+        Leadership, Empathie, Analyse, Créativité, Structure, Adaptabilité
+        Label : Élevé (> 0.66), Modéré (> 0.33), Faible (≤ 0.33)
+        
+        Base-toi uniquement sur les réponses fournies. Sois précis et nuancé.
+    """
+
+        val PROFILING_RESPONSE_SCHEMA: JsonObject = buildJsonObject {
+            put("type", "object")
+            put("additionalProperties", false)
+            putJsonArray("required") {
+                add("profile_type")
+                add("raw_scores")
+                add("dimensions")
+            }
+            putJsonObject("properties") {
+                putJsonObject("profile_type") {
+                    put("type", "string")
+                    put("description", "Nom du profil principal ex: Le Visionnaire")
+                }
+                putJsonObject("raw_scores") {
+                    put("type", "object")
+                    put("description", "Score brut par dimension entre 0.0 et 1.0")
+                    putJsonObject("additionalProperties") {
+                        put("type", "number")
+                    }
+                }
+                putJsonObject("dimensions") {
+                    put("type", "array")
+                    putJsonObject("items") {
+                        put("type", "object")
+                        put("additionalProperties", false)
+                        putJsonArray("required") {
+                            add("dimension")
+                            add("score")
+                            add("label")
+                        }
+                        putJsonObject("properties") {
+                            putJsonObject("dimension") {
+                                put("type", "string")
+                                put("description", "Nom de la dimension ex: Leadership")
+                            }
+                            putJsonObject("score") {
+                                put("type", "number")
+                                put("description", "Score entre 0.0 et 1.0")
+                            }
+                            putJsonObject("label") {
+                                put("type", "string")
+                                put("description", "Élevé, Modéré ou Faible")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        val PROFILING_COMPLETION_ARGS: CompletionArgs = CompletionArgs(
+            temperature = 0.0,
+            max_tokens  = 500,
+            top_p       = 1.0,
+            response_format = ResponseFormat(
+                json_schema = JsonSchema(
+                    schema = PROFILING_RESPONSE_SCHEMA,
+                    name   = "profiling_response_schema"
+                ),
+                type = "json_schema"
+            )
+        )
     }
+
+    @Serializable
+    data class ProfilingDimensionEntry(
+        val dimension: String,
+        val score: Float,
+        val label: String
+    )
+
+    @Serializable
+    data class ProfilingAnalysisResponse(
+        val profile_type: String,
+        val raw_scores: Map<String, Float>,
+        val dimensions: List<ProfilingDimensionEntry>
+    )
 
     @Serializable
     data class OutputEntry(
