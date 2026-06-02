@@ -1,154 +1,141 @@
-# relaunch-back
+# Relaunch — Backend
 
-This project was created using the [Ktor Project Generator](https://start.ktor.io).
+REST API server built with Kotlin + Ktor.  
+Handles coaching logic, user profiling, and communication with Mistral AI and Supabase.
 
-Here are some useful links to get you started:
+Frontend repo: [github.com/Lotratemi/relaunch_front](https://github.com/Lotratemi/relaunch_front)
 
-- [Ktor Documentation](https://ktor.io/docs/home.html)
-- [Ktor GitHub page](https://github.com/ktorio/ktor)
-- The [Ktor Slack chat](https://app.slack.com/client/T09229ZC6/C0A974TJ9). You'll need to [request an invite](https://surveys.jetbrains.com/s3/kotlin-slack-sign-up) to join.
+---
 
-## Features
+## Prerequisites
 
-Here's a list of features included in this project:
+- Android Studio Panda 2 (2025.3.2) or higher, with the Kotlin Multiplatform Mobile plugin enabled
+- JDK 21 — provided automatically by the Gradle wrapper, no manual installation needed
+- Git
+- Docker Desktop (latest stable) — required to run the local PostgreSQL database for tests
+- An administrator account on your machine — required to install and run Docker Desktop
+- Access to the Supabase project (ask the tech lead)
+- Mistral AI API key (ask the tech lead)
 
-| Name                                               | Description                                                 |
-| ----------------------------------------------------|------------------------------------------------------------- |
-| [Routing](https://start.ktor.io/p/routing-default) | Allows to define structured routes and associated handlers. |
+---
 
-## Building & Running
-
-To build or run the project, use one of the following tasks:
-
-| Task                                    | Description                                                          |
-| -----------------------------------------|---------------------------------------------------------------------- |
-| `./gradlew test`                        | Run the tests                                                        |
-| `./gradlew build`                       | Build everything                                                     |
-| `./gradlew buildFatJar`                 | Build an executable JAR of the server with all dependencies included |
-| `./gradlew buildImage`                  | Build the docker image to use with the fat JAR                       |
-| `./gradlew publishImageToLocalRegistry` | Publish the docker image locally                                     |
-| `./gradlew run`                         | Run the server                                                       |
-| `./gradlew runDocker`                   | Run using the local docker image                                     |
-
-If the server starts successfully, you'll see the following output:
-
-```
-2024-12-04 14:32:45.584 [main] INFO  Application - Application started in 0.303 seconds.
-2024-12-04 14:32:45.682 [main] INFO  Application - Responding at http://0.0.0.0:8080
-```
-
-## Tests
-
-Integration tests run against the real Supabase instance. Each test class creates its fixtures via `@Before`, cleans them up via `@After`, and is fully isolated from other test classes.
-
-| Suite | Coverage |
-|-------|----------|
-| `UserRoutesTest` | CRUD + list, get by id, 400/404 handling |
-| `ConversationRoutesTest` | CRUD + filter by `user_id` |
-| `MessageRoutesTest` | Create/read/delete + filter by `conversation_id` |
-| `ObjectiveRoutesTest` | CRUD + filter by `user_id` |
+## Installation
 
 ```bash
-# Run all tests
-./gradlew test
+# Clone the repository
+git clone https://github.com/Lotratemi/relaunch_back.git
+cd relaunch_back
 
-# Run a single suite
-./gradlew test --tests "com.codingfactory.UserRoutesTest"
-./gradlew test --tests "com.codingfactory.ConversationRoutesTest"
-./gradlew test --tests "com.codingfactory.MessageRoutesTest"
-./gradlew test --tests "com.codingfactory.ObjectiveRoutesTest"
-```
-
-Credentials are loaded from `local.properties` (gitignored). See `.env.example` for the required keys.
-
----
-
-## API Reference
-
-Base URL: `http://0.0.0.0:31337`
-
-### Users
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/users` | List all users |
-| GET | `/users/{id}` | Get a user by ID |
-| POST | `/users` | Create a user |
-| PUT | `/users/{id}` | Update a user |
-| DELETE | `/users/{id}` | Delete a user |
-
-**User object:**
-```json
-{
-  "name": "john_doe",
-  "mail": "john@example.com",
-  "age": 25
-}
+# Open in Android Studio or IntelliJ
+# File > Open > select the relaunch-app-back folder
+# Wait for the Gradle sync to complete
 ```
 
 ---
 
-### Conversations
+## Local configuration
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/conversations` | List all conversations |
-| GET | `/conversations?user_id={id}` | List conversations for a user |
-| GET | `/conversations/{id}` | Get a conversation by ID |
-| POST | `/conversations` | Create a conversation |
-| PUT | `/conversations/{id}` | Update a conversation |
-| DELETE | `/conversations/{id}` | Delete a conversation |
+Secrets and local settings are stored in `local.properties` at the project root.  
+This file is automatically generated by Android Studio and is already in `.gitignore` — never commit it.
 
-**Conversation object:**
-```json
-{
-  "user_id": 1,
-  "objective_set": false
-}
-```
+Add the following keys to your `local.properties`:
 
----
+| Key | Description |
+|---|---|
+| `SUPABASE_URL` | URL of the Supabase project |
+| `SUPABASE_KEY` | Supabase API key |
+| `MISTRAL_API_URL` | Mistral AI base URL |
+| `MISTRAL_API_KEY` | Mistral AI API key |
+| `MISTRAL_AI_MODEL` | AI model name (e.g. `mistral-small-latest`) |
+| `TEST_DB_HOST` | Local test database host (e.g. `localhost`) |
+| `TEST_DB_PORT` | Local test database port (e.g. `5433`) |
+| `TEST_DB_NAME` | Local test database name |
+| `TEST_DB_USER` | Local test database user |
+| `TEST_DB_PASSWORD` | Local test database password |
+| `TEST_DB_CONTAINER` | Docker container name for the test database |
 
-### Messages
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/messages` | List all messages |
-| GET | `/messages?conversation_id={id}` | List messages for a conversation |
-| GET | `/messages/{id}` | Get a message by ID |
-| POST | `/messages` | Create a message |
-| DELETE | `/messages/{id}` | Delete a message |
-
-**Message object:**
-```json
-{
-  "conversation_id": 1,
-  "is_user": true,
-  "content": "Hello!"
-}
-```
+Real values for Supabase and Mistral are shared privately by the tech lead.  
+Test database values can be set freely — they are only used locally by Docker.  
+Do not share or commit this file.
 
 ---
 
-### Objectives
+## Running the server
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/objectives` | List all objectives |
-| GET | `/objectives?user_id={id}` | List objectives for a user |
-| GET | `/objectives/{id}` | Get an objective by ID |
-| POST | `/objectives` | Create an objective |
-| PUT | `/objectives/{id}` | Update an objective |
-| DELETE | `/objectives/{id}` | Delete an objective |
-
-**Objective object:**
-```json
-{
-  "user_id": 1,
-  "end_at": "2026-12-31T00:00:00Z",
-  "frequency": 7,
-  "title": "Exercise daily",
-  "description": "30 minutes of cardio"
-}
+```bash
+.\gradlew.bat run    # Windows
+./gradlew run        # macOS / Linux
 ```
 
+The server starts on `http://localhost:8080`.  
+To verify the server is running, check the terminal logs for `Application started`.
+
+---
+
+## API routes
+
+API routes are defined in `src/main/kotlin/routes/`.
+
+---
+
+## Database
+
+Supabase (PostgreSQL) is used for production and development data.  
+The frontend never connects to it directly — all requests go through this backend.
+
+Tables are managed via the Supabase dashboard at `supabase.com`.  
+Ask the tech lead for access to the project.
+
+---
+
+## Running the tests
+
+Start Docker Desktop before running the tests.  
+It spins up a local PostgreSQL instance automatically initialised from `src/test/resources/init.sql`.  
+This keeps test data completely isolated from the real Supabase database.
+
+```bash
+# Windows
+.\gradlew.bat clean
+.\gradlew.bat build
+.\gradlew.bat test
+
+# macOS / Linux
+./gradlew clean build test
+```
+
+> Always use the Mistral mocks available in `src/test/` — never call the real API in tests.
+
+---
+
+## Mistral AI
+
+The backend is the only component that calls Mistral. The frontend has no knowledge of this API.  
+The model is configured via environment variables (`MISTRAL_API_URL`, `MISTRAL_API_KEY`, `MISTRAL_AI_MODEL`) and injected into `CoachService` and `ProfilingService`.
+
+---
+
+## Conventions
+
+Branches:
+
+| Branch | Purpose |
+|---|---|
+| `main` | Stable code — never push directly |
+| `develop` | Integration branch |
+| `feat/feature-name` | New feature |
+| `fix/bug-name` | Bug fix |
+
+Commit messages follow the [Conventional Commits](https://www.conventionalcommits.org) format:
+
+```
+feat: add profiling endpoint
+fix: handle null userId in coaching route
+docs: update README
+```
+
+Every PR to `develop` requires approval from at least one other team member.
+
+---
+
+*Keep this file up to date with every route or configuration change.*
