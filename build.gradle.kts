@@ -24,6 +24,31 @@ tasks.named<JavaExec>("run") {
     environment(loadLocalProps())
 }
 
+// Runs the back against the LOCAL test Postgres (APP_MODE=test) with Mistral
+// pointed at the local mock — the right setup for load testing without touching
+// prod (Supabase) or paying Mistral. Brings up the test DB first.
+//   1. ./gradlew runMistralMock   (separate terminal)
+//   2. ./gradlew runTestMode
+tasks.register<JavaExec>("runTestMode") {
+    group = "application"
+    description = "Runs the app in test mode (local Postgres + mocked Mistral) for load testing."
+    mainClass.set("io.ktor.server.netty.EngineMain")
+    classpath = sourceSets["main"].runtimeClasspath
+    dependsOn("waitForTestDb")   // brings up postgres:16-alpine on :5433 with init.sql
+    environment(loadLocalProps())
+    environment("APP_MODE", "test")
+    // Default Mistral to the local mock; override by exporting MISTRAL_API_URL beforehand.
+    environment("MISTRAL_API_URL", System.getenv("MISTRAL_API_URL") ?: "http://localhost:8089")
+}
+
+// Stand-in Mistral conversations API (see src/main/kotlin/mock/MistralMock.kt).
+tasks.register<JavaExec>("runMistralMock") {
+    group = "application"
+    description = "Runs the local Mistral mock server (default :8089) for load testing."
+    mainClass.set("com.codingfactory.mock.MistralMockKt")
+    classpath = sourceSets["main"].runtimeClasspath
+}
+
 kotlin {
     jvmToolchain(21)
 }
@@ -42,6 +67,9 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:realtime-kt")
     implementation(libs.ktor.client.content.negotiation)
     implementation("org.postgresql:postgresql:42.7.4")
+    implementation(libs.ktor.server.metrics.micrometer)
+    implementation(libs.micrometer.registry.prometheus)
+    implementation(libs.hikaricp)
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:${libs.versions.kotlin.get()}")

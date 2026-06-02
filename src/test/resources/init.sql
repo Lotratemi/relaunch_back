@@ -16,6 +16,12 @@ CREATE TABLE IF NOT EXISTS objectives (
     description TEXT
 );
 
+CREATE TABLE IF NOT EXISTS conversation (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES "user"(id) ON DELETE CASCADE,
+    mistral_conv_id TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS user_profiles (
     id              SERIAL PRIMARY KEY,
     user_id         INT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,

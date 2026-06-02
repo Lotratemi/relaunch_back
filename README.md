@@ -39,7 +39,16 @@ If the server starts successfully, you'll see the following output:
 
 ## Tests
 
-Integration tests run against the real Supabase instance. Each test class creates its fixtures via `@Before`, cleans them up via `@After`, and is fully isolated from other test classes.
+Integration tests run against a **local Postgres** spun up automatically in Docker
+(no Supabase, no setup). Running any `test` task triggers Gradle to:
+
+1. `startTestDb` — `docker run` a `postgres:16-alpine` container on `:5433`, schema loaded from `src/test/resources/init.sql`
+2. `waitForTestDb` — poll `pg_isready` (up to 30s)
+3. run the suite with `APP_MODE=test` and the `TEST_DB_*` env vars from `local.properties`
+4. `stopTestDb` — remove the container
+
+The only prerequisite is **Docker Desktop running**. In `APP_MODE=test`,
+`Database.run(...)` talks to this local Postgres over JDBC instead of Supabase.
 
 | Suite | Coverage |
 |-------|----------|
@@ -63,9 +72,23 @@ Credentials are loaded from `local.properties` (gitignored). See `.env.example` 
 
 ---
 
+## Performance testing
+
+Load tests (k6) and live metrics (Micrometer/Prometheus) live in [`perf/`](perf/README.md).
+
+```powershell
+./gradlew runMistralMock     # fake Mistral API on :8089
+./gradlew runTestMode        # app on :8080, local Postgres, Mistral -> mock
+k6 run perf/users.js         # then run a scenario
+```
+
+The app exposes Prometheus metrics on `GET /metrics` (per-route latency + JVM).
+
+---
+
 ## API Reference
 
-Base URL: `http://0.0.0.0:31337`
+Base URL: `http://0.0.0.0:8080`
 
 ### Users
 

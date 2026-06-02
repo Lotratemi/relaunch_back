@@ -22,7 +22,7 @@ class ProfilingRepository {
                 """
                 INSERT INTO user_profiles (user_id, profile_type, version, raw_scores)
                 VALUES (?, ?, ?, ?::jsonb)
-                RETURNING to_jsonb(user_profiles.*)
+                RETURNING to_jsonb(user_profiles.*) || jsonb_build_object('raw_scores', raw_scores::text)
                 """.trimIndent(),
                 profile.userId, profile.profileType, profile.version, profile.rawScores
             )
@@ -86,7 +86,8 @@ class ProfilingRepository {
         test = {
             it.fetchOne(
                 """
-                SELECT to_jsonb(p) FROM user_profiles p
+                SELECT to_jsonb(p) || jsonb_build_object('raw_scores', p.raw_scores::text)
+                FROM user_profiles p
                 WHERE user_id = ?
                 ORDER BY completed_at DESC
                 LIMIT 1
@@ -124,7 +125,8 @@ class ProfilingRepository {
         test = {
             it.fetchAll(
                 """
-                SELECT to_jsonb(p) FROM user_profiles p
+                SELECT to_jsonb(p) || jsonb_build_object('raw_scores', p.raw_scores::text)
+                FROM user_profiles p
                 WHERE user_id = ?
                 ORDER BY completed_at DESC
                 """.trimIndent(),
