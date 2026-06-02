@@ -94,6 +94,14 @@ Start Docker Desktop before running the tests.
 It spins up a local PostgreSQL instance automatically initialised from `src/test/resources/init.sql`.  
 This keeps test data completely isolated from the real Supabase database.
 
+The following Docker image is required — pull it once before running the tests for the first time:
+
+```bash
+docker pull postgres:16-alpine
+```
+
+Tests can be run from the terminal or directly from Android Studio by clicking the run icon next to any test class.
+
 ```bash
 # Windows
 .\gradlew.bat clean
@@ -137,5 +145,3 @@ docs: update README
 Every PR to `develop` requires approval from at least one other team member.
 
 ---
-
-*Keep this file up to date with every route or configuration change.*
