@@ -5,9 +5,10 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import kotlinx.serialization.json.Json
 import java.sql.Connection
-import java.sql.DriverManager
 
 enum class DbMode { PROD, TEST }
 
@@ -27,17 +28,27 @@ object Database {
         }
     }
 
-    private val jdbcUrl: String by lazy {
-        "jdbc:postgresql://${env("TEST_DB_HOST")}:${env("TEST_DB_PORT")}/${env("TEST_DB_NAME")}"
+    // Pooled JDBC connections for the TEST database. A new raw connection per
+    // request exhausts Postgres' max_connections under load; the pool caps and
+    // reuses a small set instead.
+    private val dataSource: HikariDataSource by lazy {
+        HikariDataSource(
+            HikariConfig().apply {
+                jdbcUrl = "jdbc:postgresql://${env("TEST_DB_HOST")}:${env("TEST_DB_PORT")}/${env("TEST_DB_NAME")}"
+                username = env("TEST_DB_USER")
+                password = env("TEST_DB_PASSWORD")
+                driverClassName = "org.postgresql.Driver"
+                maximumPoolSize = 10
+                poolName = "relaunch-test-pool"
+            }
+        )
     }
-    private val jdbcUser: String by lazy { env("TEST_DB_USER") }
-    private val jdbcPassword: String by lazy { env("TEST_DB_PASSWORD") }
 
     fun connection(): Connection {
         return try {
-            DriverManager.getConnection(jdbcUrl, jdbcUser, jdbcPassword)
+            dataSource.connection
         } catch (e: Exception) {
-                throw RuntimeException("Erreur connexion DB Test : ${e.message}")
+            throw RuntimeException("Erreur connexion DB Test : ${e.message}")
         }
     }
 

@@ -19,6 +19,8 @@ fun Application.module() {
         json(Json { ignoreUnknownKeys = true })
     }
 
+    configureMonitoring()
+
     val userService = UserService(UserRepository())
     val objectiveService = ObjectiveService(ObjectiveRepository())
     val coachService = CoachService(
