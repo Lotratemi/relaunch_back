@@ -76,13 +76,14 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
 }
 
-val props = loadLocalProps()
-fun prop(key: String) = props[key] ?: error("Missing $key in local.properties")
-val testDbContainer = prop("TEST_DB_CONTAINER")
-val testDbPort = prop("TEST_DB_PORT")
-val testDbName = prop("TEST_DB_NAME")
-val testDbUser = prop("TEST_DB_USER")
-val testDbPassword = prop("TEST_DB_PASSWORD")
+fun prop(key: String) = loadLocalProps()[key] ?: error("Missing $key in local.properties")
+// Lazy: only the test/db tasks need these, so a build without local.properties
+// (e.g. the production Docker image) doesn't fail at configuration time.
+val testDbContainer by lazy { prop("TEST_DB_CONTAINER") }
+val testDbPort by lazy { prop("TEST_DB_PORT") }
+val testDbName by lazy { prop("TEST_DB_NAME") }
+val testDbUser by lazy { prop("TEST_DB_USER") }
+val testDbPassword by lazy { prop("TEST_DB_PASSWORD") }
 
 val initSqlPath = file("src/test/resources/init.sql").absolutePath.replace('\\', '/')
 

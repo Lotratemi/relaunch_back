@@ -1,0 +1,16 @@
+.git
+.github
+.idea
+.gradle
+.kotlin
+.rtk
+.vscode
+build
+out
+bin
+*.iml
+local.properties
+.env
+perf
+README.md
+CLAUDE.md
