@@ -3,6 +3,7 @@ package com.codingfactory
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import kotlinx.serialization.json.Json
+import java.net.URI
 import java.sql.Connection
 
 enum class DbMode { PROD, TEST }
@@ -20,13 +21,29 @@ object Database {
         val user: String, val password: String,
     )
 
+    // Render exposes the database as a single connection string, e.g.
+    //   postgresql://user:pass@dpg-xxxx-a[:5432]/dbname
+    // (the internal URL often omits the port). Parse it into discrete parts so we
+    // can hand HikariCP a clean jdbc:postgresql:// URL plus credentials.
+    private fun parseUrl(url: String): Conn {
+        val uri = URI(url.removePrefix("jdbc:"))
+        val userInfo = uri.userInfo?.split(":", limit = 2)
+            ?: error("DATABASE_URL is missing credentials")
+        val host = uri.host ?: error("DATABASE_URL is missing a host")
+        val port = if (uri.port != -1) uri.port.toString() else "5432"
+        val name = uri.path.removePrefix("/").ifEmpty { error("DATABASE_URL is missing a database name") }
+        return Conn(host, port, name, userInfo[0], userInfo.getOrElse(1) { "" })
+    }
+
     // Both PROD (managed Postgres on Render) and TEST (local Docker Postgres) are
     // reached over plain JDBC through a single Hikari pool. A new raw connection
     // per request would exhaust Postgres' max_connections under load; the pool
     // caps and reuses a small set instead.
     private val dataSource: HikariDataSource by lazy {
         val c = when (mode) {
-            DbMode.PROD -> Conn(env("DB_HOST"), env("DB_PORT"), env("DB_NAME"), env("DB_USER"), env("DB_PASSWORD"))
+            // Prefer a single DATABASE_URL (the Render idiom); fall back to discrete vars.
+            DbMode.PROD -> System.getenv("DATABASE_URL")?.let { parseUrl(it) }
+                ?: Conn(env("DB_HOST"), env("DB_PORT"), env("DB_NAME"), env("DB_USER"), env("DB_PASSWORD"))
             DbMode.TEST -> Conn(env("TEST_DB_HOST"), env("TEST_DB_PORT"), env("TEST_DB_NAME"), env("TEST_DB_USER"), env("TEST_DB_PASSWORD"))
         }
         HikariDataSource(
