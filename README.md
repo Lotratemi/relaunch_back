@@ -155,19 +155,29 @@ The model is configured via environment variables (`MISTRAL_API_URL`, `MISTRAL_A
 
 ## Deployment (Render)
 
-The backend ships as a Docker image (see `Dockerfile`) and is deployed on
-[render.com](https://render.com) via the `render.yaml` blueprint, alongside a
-**managed Render PostgreSQL** database.
+The backend runs on [render.com](https://render.com) as a **Docker web service**
+(Runtime: Docker, Dockerfile Path: `./Dockerfile`), alongside a **managed Render
+PostgreSQL** database. Both are created from the dashboard.
 
-The blueprint provisions both the web service and the database in the **same
-region** (`frankfurt`) so the app↔DB hop stays in-zone (sub-millisecond). The
-`DB_*` connection variables are injected automatically from the managed database
-(`fromDatabase`) — you never copy credentials by hand. On first boot the app
-applies `src/main/resources/schema.sql` itself (idempotent `CREATE TABLE IF NOT
-EXISTS`), so a fresh database bootstraps with no manual `psql`.
+Create the database and the web service in the **same region** (`frankfurt`) so
+the app↔DB hop stays in-zone (sub-millisecond). On the web service's
+**Environment** tab, wire the `DB_*` variables to the database using **Add from
+Database** (no hand-copied credentials):
 
-The only variables to set by hand in the Render dashboard are the Mistral
-secrets (all `sync: false`, none committed):
+| Variable | Database property |
+|---|---|
+| `DB_HOST` | Host (internal) |
+| `DB_PORT` | Port |
+| `DB_NAME` | Database |
+| `DB_USER` | User |
+| `DB_PASSWORD` | Password |
+
+Use the **internal** host (Render private network) — that's what keeps latency
+in-zone. On first boot the app applies `src/main/resources/schema.sql` itself
+(idempotent `CREATE TABLE IF NOT EXISTS`), so a fresh database bootstraps with
+no manual `psql`.
+
+Also set the Mistral secrets by hand on the same Environment tab:
 
 | Variable | Description |
 |---|---|
