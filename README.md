@@ -161,21 +161,23 @@ PostgreSQL** database. Both are created from the dashboard.
 
 Create the database and the web service in the **same region** (`frankfurt`) so
 the app↔DB hop stays in-zone (sub-millisecond). On the web service's
-**Environment** tab, wire the `DB_*` variables to the database using **Add from
-Database** (no hand-copied credentials):
+**Environment** tab, add **one** variable wired to the database via **Add from
+Database**:
 
 | Variable | Database property |
 |---|---|
-| `DB_HOST` | Host (internal) |
-| `DB_PORT` | Port |
-| `DB_NAME` | Database |
-| `DB_USER` | User |
-| `DB_PASSWORD` | Password |
+| `DATABASE_URL` | **Internal Connection String** |
 
-Use the **internal** host (Render private network) — that's what keeps latency
-in-zone. On first boot the app applies `src/main/resources/schema.sql` itself
-(idempotent `CREATE TABLE IF NOT EXISTS`), so a fresh database bootstraps with
-no manual `psql`.
+The app parses `DATABASE_URL` (`postgresql://user:pass@host[:port]/db`, port
+optional) into a clean JDBC connection. The **internal** connection string keeps
+traffic on Render's private network — that's what keeps latency in-zone.
+
+> Alternatively, the app also accepts discrete `DB_HOST` / `DB_PORT` / `DB_NAME`
+> / `DB_USER` / `DB_PASSWORD` vars, but `DATABASE_URL` is one field instead of
+> five and avoids mismatches (e.g. pasting the whole URL into `DB_HOST`).
+
+On first boot the app applies `src/main/resources/schema.sql` itself (idempotent
+`CREATE TABLE IF NOT EXISTS`), so a fresh database bootstraps with no manual `psql`.
 
 Also set the Mistral secrets by hand on the same Environment tab:
 
