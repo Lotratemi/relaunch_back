@@ -21,6 +21,8 @@ fun Application.module() {
 
     configureMonitoring()
 
+    Database.initSchema()
+
     val userService = UserService(UserRepository())
     val objectiveService = ObjectiveService(ObjectiveRepository())
     val coachService = CoachService(

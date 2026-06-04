@@ -1,10 +1,5 @@
 package com.codingfactory
 
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.Auth
-import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.postgrest.Postgrest
-import io.github.jan.supabase.realtime.Realtime
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import kotlinx.serialization.json.Json
@@ -20,26 +15,28 @@ object Database {
 
     private fun env(name: String) = System.getenv(name) ?: error("Missing $name environment variable")
 
-    val supabase: SupabaseClient by lazy {
-        createSupabaseClient(supabaseUrl = env("SUPABASE_URL"), supabaseKey = env("SUPABASE_KEY")) {
-            install(Postgrest)
-            install(Auth)
-            install(Realtime)
-        }
-    }
+    private data class Conn(
+        val host: String, val port: String, val name: String,
+        val user: String, val password: String,
+    )
 
-    // Pooled JDBC connections for the TEST database. A new raw connection per
-    // request exhausts Postgres' max_connections under load; the pool caps and
-    // reuses a small set instead.
+    // Both PROD (managed Postgres on Render) and TEST (local Docker Postgres) are
+    // reached over plain JDBC through a single Hikari pool. A new raw connection
+    // per request would exhaust Postgres' max_connections under load; the pool
+    // caps and reuses a small set instead.
     private val dataSource: HikariDataSource by lazy {
+        val c = when (mode) {
+            DbMode.PROD -> Conn(env("DB_HOST"), env("DB_PORT"), env("DB_NAME"), env("DB_USER"), env("DB_PASSWORD"))
+            DbMode.TEST -> Conn(env("TEST_DB_HOST"), env("TEST_DB_PORT"), env("TEST_DB_NAME"), env("TEST_DB_USER"), env("TEST_DB_PASSWORD"))
+        }
         HikariDataSource(
             HikariConfig().apply {
-                jdbcUrl = "jdbc:postgresql://${env("TEST_DB_HOST")}:${env("TEST_DB_PORT")}/${env("TEST_DB_NAME")}"
-                username = env("TEST_DB_USER")
-                password = env("TEST_DB_PASSWORD")
+                jdbcUrl = "jdbc:postgresql://${c.host}:${c.port}/${c.name}"
+                username = c.user
+                password = c.password
                 driverClassName = "org.postgresql.Driver"
                 maximumPoolSize = 10
-                poolName = "relaunch-test-pool"
+                poolName = "relaunch-pool"
             }
         )
     }
@@ -48,21 +45,27 @@ object Database {
         return try {
             dataSource.connection
         } catch (e: Exception) {
-            throw RuntimeException("Erreur connexion DB Test : ${e.message}")
+            throw RuntimeException("Erreur connexion DB ($mode) : ${e.message}")
         }
     }
 
-    suspend fun <T> run(prod: suspend (SupabaseClient) -> T, test: (Connection) -> T): T {
+    // Applies the schema (idempotent CREATE TABLE IF NOT EXISTS) at startup so a
+    // fresh Render database bootstraps itself on first deploy — no manual psql.
+    fun initSchema() {
+        val ddl = Database::class.java.getResource("/schema.sql")?.readText()
+            ?: error("schema.sql not found on classpath")
+        connection().use { conn ->
+            conn.createStatement().use { it.execute(ddl) }
+        }
+    }
+
+    suspend fun <T> run(block: (Connection) -> T): T {
         return try {
-            when (mode) {
-                DbMode.PROD -> prod(supabase)
-                DbMode.TEST -> connection().use(test)
-            }
+            connection().use(block)
         } catch (e: Exception) {
-            println("Erreur DataBase (${mode}): ${e.message}")
+            println("Erreur DataBase ($mode): ${e.message}")
             throw e
         }
-
     }
 
     inline fun <reified T> Connection.fetchAll(sql: String, vararg args: Any?): List<T> {
