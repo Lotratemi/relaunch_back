@@ -48,3 +48,5 @@ CREATE TABLE IF NOT EXISTS profile_dimensions (
     score           FLOAT NOT NULL,  -- 0.0 à 1.0
     label           TEXT NOT NULL    -- "Élevé", "Modéré", "Faible"
 );
+
+ALTER TABLE objectives ADD COLUMN is_completed BOOLEAN DEFAULT FALSE;

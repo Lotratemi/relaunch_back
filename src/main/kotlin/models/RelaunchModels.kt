@@ -40,6 +40,7 @@ class RelaunchModels {
         @SerialName("end_at") val endAt: String,
         val frequency: Long,
         val title: String,
-        val description: String? = null
+        val description: String? = null,
+        @SerialName("_iscomplet") val isComplet: Boolean = false,
     )
 }

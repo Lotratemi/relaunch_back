@@ -23,7 +23,7 @@ class ObjectiveRepository {
             VALUES (?, ?::timestamptz, ?, ?, ?)
             RETURNING to_jsonb(objectives.*)
             """.trimIndent(),
-            objective.userId, objective.endAt, objective.frequency, objective.title, objective.description
+            objective.userId, objective.endAt, objective.frequency, objective.title, objective.description, objective.isComplet
         )
     }
 
@@ -35,7 +35,7 @@ class ObjectiveRepository {
             WHERE id = ? AND user_id = ?
             RETURNING to_jsonb(objectives.*)
             """.trimIndent(),
-            objective.endAt, objective.frequency, objective.title, objective.description, id, userId
+            objective.endAt, objective.frequency, objective.title, objective.description, id, userId, objective.isComplet
         )
     }
 
