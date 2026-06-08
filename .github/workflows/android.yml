@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
 
 jobs:
   build:
@@ -26,8 +26,21 @@ jobs:
     - name: Build
       run: ./gradlew build -x test
 
+    # The `test` Gradle task spins up a throwaway postgres:16-alpine container
+    # (startTestDb/waitForTestDb) seeded from src/test/resources/init.sql, and
+    # reads its connection settings from local.properties via loadLocalProps().
+    # These values are local-only and non-secret (they target the disposable
+    # container on the runner), so we generate the file in CI.
+    - name: Generate local.properties for the test database
+      run: |
+        cat > local.properties <<'EOF'
+        TEST_DB_HOST=localhost
+        TEST_DB_PORT=5433
+        TEST_DB_NAME=relaunch_test
+        TEST_DB_USER=test
+        TEST_DB_PASSWORD=test
+        TEST_DB_CONTAINER=relaunch_test_db
+        EOF
+
     - name: Test
       run: ./gradlew test
-      env:
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}

@@ -50,6 +50,34 @@ class ObjectiveIntegrationTest {
     }
 
     @Test
+    fun `create objective persists is_completed flag`() = runBlocking {
+        val created = objectives.create(newObjective(title = "Done").copy(isComplet = true))
+        assertNotNull(created)
+        assertTrue(created!!.isComplet)
+
+        val reloaded = objectives.getByIdForUser(created.id!!, testUser.id!!)
+        assertNotNull(reloaded)
+        assertTrue(reloaded!!.isComplet)
+    }
+
+    @Test
+    fun `create objective defaults is_completed to false`() = runBlocking {
+        val created = objectives.create(newObjective(title = "Todo"))!!
+        assertEquals(false, created.isComplet)
+    }
+
+    @Test
+    fun `update objective toggles is_completed`() = runBlocking {
+        val created = objectives.create(newObjective(title = "Toggle"))!!
+        val updated = objectives.update(
+            created.id!!, testUser.id!!,
+            newObjective(title = "Toggle").copy(isComplet = true)
+        )
+        assertNotNull(updated)
+        assertTrue(updated!!.isComplet)
+    }
+
+    @Test
     fun `list objectives returns only the target user's objectives`() = runBlocking {
         objectives.create(newObjective(title = "A"))
         objectives.create(newObjective(title = "B"))
