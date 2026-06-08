@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS objectives (
     end_at TIMESTAMPTZ NOT NULL,
     frequency BIGINT NOT NULL,
     title TEXT NOT NULL,
-    description TEXT
+    description TEXT,
+    is_completed BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS conversation (
@@ -48,5 +49,3 @@ CREATE TABLE IF NOT EXISTS profile_dimensions (
     score           FLOAT NOT NULL,  -- 0.0 à 1.0
     label           TEXT NOT NULL    -- "Élevé", "Modéré", "Faible"
 );
-
-ALTER TABLE objectives ADD COLUMN is_completed BOOLEAN DEFAULT FALSE;

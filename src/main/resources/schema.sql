@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS objectives (
     end_at TIMESTAMPTZ NOT NULL,
     frequency BIGINT NOT NULL,
     title TEXT NOT NULL,
-    description TEXT
+    description TEXT,
+    is_completed BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS conversation (

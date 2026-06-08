@@ -19,8 +19,8 @@ class ObjectiveRepository {
     suspend fun create(objective: Objective): Objective? = Database.run {
         it.fetchOne(
             """
-            INSERT INTO objectives (user_id, end_at, frequency, title, description)
-            VALUES (?, ?::timestamptz, ?, ?, ?)
+            INSERT INTO objectives (user_id, end_at, frequency, title, description, is_completed)
+            VALUES (?, ?::timestamptz, ?, ?, ?, ?)
             RETURNING to_jsonb(objectives.*)
             """.trimIndent(),
             objective.userId, objective.endAt, objective.frequency, objective.title, objective.description, objective.isComplet
@@ -31,11 +31,11 @@ class ObjectiveRepository {
         it.fetchOne(
             """
             UPDATE objectives
-            SET end_at = ?::timestamptz, frequency = ?, title = ?, description = ?
+            SET end_at = ?::timestamptz, frequency = ?, title = ?, description = ?, is_completed = ?
             WHERE id = ? AND user_id = ?
             RETURNING to_jsonb(objectives.*)
             """.trimIndent(),
-            objective.endAt, objective.frequency, objective.title, objective.description, id, userId, objective.isComplet
+            objective.endAt, objective.frequency, objective.title, objective.description, objective.isComplet, id, userId
         )
     }
 

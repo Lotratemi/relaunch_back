@@ -41,6 +41,6 @@ class RelaunchModels {
         val frequency: Long,
         val title: String,
         val description: String? = null,
-        @SerialName("_iscomplet") val isComplet: Boolean = false,
+        @SerialName("is_completed") val isComplet: Boolean = false,
     )
 }
